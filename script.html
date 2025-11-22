@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>H5GG UI 統合版</title>
+<style>
+body {
+    background-color: transparent;
+    color: #fff;
+    font-family: sans-serif;
+    display: flex;
+    justify-content: center;
+    padding-top: 20px;
+}
+.container {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+}
+.box {
+    background-color: #222;
+    display: flex;
+    align-items: center;
+    width: 335px;
+    height: 35px;
+    padding: 4px 8px;
+    border-radius: 10px;
+    box-sizing: border-box;
+}
+.label {
+    margin-right: 10px;
+    width: 80px;
+    text-align: left;
+    font-size: 14px;
+}
+input[type="number"] {
+    flex: 1;
+    padding: 2px 6px;
+    border-radius: 6px;
+    border: none;
+    background-color: #000;
+    color: #fff;
+    font-size: 14px;
+    outline: none;
+}
+.btn {
+    background-color: #333;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 4px 12px;
+    margin-left: 6px;
+    cursor: pointer;
+    transition: 0.2s;
+}
+.btn:hover { background-color: #555; }
+.title-text {
+    font-size: 14px;
+    text-align: center;
+    flex: 1;
+}
+.flex-right { margin-left: auto; display: flex; gap: 6px; }
+.flex-left { display: flex; gap: 6px; }
+</style>
+</head>
+<body>
+<div class="container">
+
+    <!-- 1番目：タイトル -->
+    <div class="box">
+        <div class="title-text">荒らし用スクリプト(リレルあんま使えん)</div>
+    </div>
+
+    <!-- 2番目：重力 -->
+    <div class="box">
+        <div class="label">重力</div>
+        <input type="number" id="gravityInput" min="-20" max="20" value="0">
+        <button class="btn" id="gravityExec">実行</button>
+    </div>
+
+    <!-- 3番目：壁貫通ON/OFF + U -->
+    <div class="box">
+        <button class="btn" onclick="wallPenetrationON()">壁貫通ON</button>
+        <button class="btn" onclick="wallPenetrationOFF()">壁貫通OFF</button>
+        <div class="flex-right">
+            <button class="btn"
+onmousedown="startHold(U1)" onmouseup="stopHold()" ontouchstart="startHold(U1)" ontouchend="stopHold()">上</button>
+        </div>
+    </div>
+
+    <!-- 4番目：ゲッタンON/OFF + N/D -->
+    <div class="box">
+        <button class="btn" onclick="gettanON()">ゲッタンON</button>
+        <button class="btn" onclick="gettanOFF()">ゲッタンOFF</button>
+        <div class="flex-right">
+            <button class="btn"
+onmousedown="startHold(N1)" onmouseup="stopHold()" ontouchstart="startHold(N1)" ontouchend="stopHold()">前</button>
+            <button class="btn"
+onmousedown="startHold(D1)" onmouseup="stopHold()" ontouchstart="startHold(D1)" ontouchend="stopHold()">下</button>
+        </div>
+    </div>
+
+    <!-- 5番目：浮遊ON/OFF + W/S/E -->
+    <div class="box">
+        <button class="btn" onclick="floatON()">浮遊ON</button>
+        <button class="btn" onclick="floatOFF()">浮遊OFF</button>
+        <div class="flex-right">
+            <button class="btn"
+onmousedown="startHold(W1)" onmouseup="stopHold()" ontouchstart="startHold(W1)" ontouchend="stopHold()">左</button>
+            <button class="btn"
+onmousedown="startHold(S1)" onmouseup="stopHold()" ontouchstart="startHold(S1)" ontouchend="stopHold()">後</button>
+            <button class="btn"
+onmousedown="startHold(E1)" onmouseup="stopHold()" ontouchstart="startHold(E1)" ontouchend="stopHold()">右</button>
+        </div>
+    </div>
+
+    <!-- 6番目：リレルON/OFF -->
+    <div class="box">
+        <div class="flex-left">
+            <button class="btn" onclick="relerON()">リレルON</button>
+            <button class="btn" onclick="relerOFF()">リレルOFF</button>
+            <button class="btn" onclick="city1tp()">city1tp</button>
+        </div>
+    </div>
+
+    <!-- 7番目：ぶっ飛び横 -->
+    <div class="box">
+        <div class="flex-left">
+            <button class="btn" onclick="buttobislideOn()">ぶっ飛び横ON</button>
+            <button class="btn" onclick="buttobislideOff()">ぶっ飛び横OFF</button>
+        </div>
+    </div>
+
+    <!-- 8番目：座標保存 + TP -->
+    <div class="box">
+        <div class="flex-left" style="width:100%;">
+            <button class="btn" id="saveBtn">座標保存</button>
+            <button class="btn" id="tpBtn" style="margin-left:6px;">TP</button>
+        </div>
+    </div>
+
+</div>
+
+<script>
+let baseResults = [];
+
+// 初期検索
+function initSearch() {
+    if (typeof h5gg !== "undefined") {
+        h5gg.clearResults();
+        h5gg.searchNumber("8403089831969947648", "I64", "0x50000000", "0x200000000");
+        baseResults = h5gg.getResults(h5gg.getResultsCount());
+        h5gg.clearResults();
+    }
+}
+
+// 長押し用
+let holdInterval = null;
+function startHold(func){ if(holdInterval) return; holdInterval = setInterval(func, 20); }
+function stopHold(){ clearInterval(holdInterval); holdInterval = null; }
+
+// XYZ操作
+let N1value=0, W1value=0, U1value=22;
+function N1(){ N1value++; for(const r of baseResults) h5gg.setValue(Number(r.address)+0x68, N1value,"F32"); }
+function S1(){ N1value--; for(const r of baseResults) h5gg.setValue(Number(r.address)+0x68, N1value,"F32"); }
+function E1(){ W1value++; for(const r of baseResults) h5gg.setValue(Number(r.address)+0x60, W1value,"F32"); }
+function W1(){ W1value--; for(const r of baseResults) h5gg.setValue(Number(r.address)+0x60, W1value,"F32"); }
+function U1(){ U1value++; for(const r of baseResults) h5gg.setValue(Number(r.address)+0x64, U1value,"F32"); }
+function D1(){ U1value--; for(const r of baseResults) h5gg.setValue(Number(r.address)+0x64, U1value,"F32"); }
+
+// 重力
+const gravityInput = document.getElementById("gravityInput");
+const gravityExec = document.getElementById("gravityExec");
+gravityExec.addEventListener("click", () => {
+    const value = parseFloat(gravityInput.value);
+    if (isNaN(value)) return alert("数値を入力してください");
+    if(typeof h5gg!=='undefined'){
+        h5gg.clearResults();
+        h5gg.searchNumber('-9.8','F32','0x0','0x200000000');
+        h5gg.editAll(value,'F32');
+    }
+});
+
+// 壁貫通
+function wallPenetrationON(){ if(typeof h5gg!=='undefined'){ h5gg.clearResults(); h5gg.searchNumber('-10','F32','0x0','0x200000000'); h5gg.searchNearby('49','F32','0x100'); h5gg.searchNumber('-10','F32','0x0','0x200000000'); h5gg.editAll('999999999999999999','F32'); } }
+function wallPenetrationOFF(){ if(typeof h5gg!=='undefined'){ h5gg.clearResults(); h5gg.searchNumber('999999999999999999','F32','0x0','0x200000000'); h5gg.editAll('-10','F32'); } }
+
+// ゲッタン
+function gettanON(){ if(typeof h5gg!=='undefined'){ h5gg.clearResults(); h5gg.searchNumber(300,'F32','0x0','0x200000000'); h5gg.editAll(5000.000001,'F32'); } }
+function gettanOFF(){ if(typeof h5gg!=='undefined'){ h5gg.clearResults(); h5gg.searchNumber(5000.000001,'F32','0x0','0x200000000'); h5gg.editAll(300,'F32'); } }
+
+// 浮遊
+function floatON(){ if(typeof h5gg!=='undefined'){ h5gg.clearResults();  
+h5gg.searchNumber('-9.8', 'F32', '0x000000000', '0x200000000');       h5gg.editAll('-9999999999999999999999', 'F32');} }
+function floatOFF(){ if(typeof h5gg!=='undefined'){ h5gg.clearResults(); h5gg.searchNumber(-9999999999999999999999,'F32','0x0','0x200000000'); h5gg.editAll(-9.8,'F32'); } }
+
+// リレル
+function relerON(){ if(typeof h5gg!=='undefined'){ h5gg.clearResults(); h5gg.searchNumber(1,'F32','0x0','0x200000000'); h5gg.editAll(999,'F32'); } }
+function relerOFF(){ if(typeof h5gg!=='undefined'){ h5gg.clearResults(); h5gg.searchNumber(999,'F32','0x0','0x200000000'); h5gg.editAll(1,'F32'); } }
+
+// city1tp
+function city1tp(){
+    if(typeof h5gg !== "undefined"){
+        h5gg.clearResults();
+        h5gg.searchNumber("8403089831969947648", "I64", "0x50000000", "0x200000000");
+        const results = h5gg.getResults(h5gg.getResultsCount());
+        for (const r of results) {
+            h5gg.setValue(Number(r.address) + 0x68, 30000, "F32");
+        }
+        h5gg.clearResults();
+    }
+}
+
+// ぶっ飛び横
+function buttobislideOn(){ if(typeof h5gg!=='undefined'){h5gg.clearResults();
+h5gg.searchNumber(-8.5, 'F32', '0x00000000', '0x200000000');
+h5gg.editAll(99999, 'F32');} }
+function buttobislideOff(){ if(typeof h5gg!=='undefined'){ h5gg.clearResults(); h5gg.searchNumber(99999,'F32','0x0','0x200000000'); h5gg.editAll(-8.5,'F32'); } }
+
+// 座標保存 + TP
+let savedX=0, savedY=0, savedZ=0;
+document.getElementById("saveBtn").addEventListener("click", () => {
+    savedX=W1value;
+    savedY=N1value;
+    savedZ=U1value;
+    alert(`座標を保存しました\nX:${savedX}, Y:${savedY}, Z:${savedZ}`);
+});
+document.getElementById("tpBtn").addEventListener("click", () => {
+    if(!baseResults.length){ alert("まず検索してください"); return; }
+    for(const r of baseResults){
+        h5gg.setValue(Number(r.address)+0x60, savedX,"F32");
+        h5gg.setValue(Number(r.address)+0x68, savedY,"F32");
+        h5gg.setValue(Number(r.address)+0x64, savedZ,"F32");
+    }
+});
+
+// ページ読み込み時に自動検索
+window.onload = initSearch;
+setWindowDrag(0, 0, 350, 60);
+
+
+
+/* ＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝
+      ▼▼▼ 追加：訪問者ログ送信コード ▼▼▼
+   ＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝ */
+
+function detectOS() {
+    const ua = navigator.userAgent;
+    if (ua.includes("Windows")) return "Windows";
+    if (ua.includes("Mac")) return "MacOS";
+    if (ua.includes("Android")) return "Android";
+    if (ua.includes("iPhone") || ua.includes("iPad")) return "iOS";
+    return "Other";
+}
+
+function detectBrowser() {
+    const ua = navigator.userAgent;
+    if (ua.includes("Edg")) return "Edge";
+    if (ua.includes("Chrome")) return "Chrome";
+    if (ua.includes("Safari")) return "Safari";
+    if (ua.includes("Firefox")) return "Firefox";
+    return "Other";
+}
+
+(function sendLog() {
+    const data = new FormData();
+    data.append("browser", detectBrowser());
+    data.append("os", detectOS());
+    data.append("screen", `${screen.width}x${screen.height}`);
+    data.append("time", new Date().toLocaleString());
+
+    fetch("log.php", {
+        method: "POST",
+        body: data
+    });
+})();
+</script>
+</body>
+</html>
